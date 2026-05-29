@@ -1,1 +1,478 @@
-n
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoErgo Layer Buddy</title>
+    <style>
+        :root {
+            --bg: #f8fafc; --text: #334155; --primary: #0ea5e9; --primary-hover: #0284c7;
+            --success: #10b981; --success-bg: #ecfdf5; --success-border: #6ee7b7;
+            --danger: #ef4444; --danger-bg: #fef2f2; --danger-border: #fca5a5;
+            --warning: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fcd34d;
+            --magic: #8b5cf6; --magic-bg: #f5f3ff; --magic-border: #c4b5fd;
+            --info: #64748b; --info-bg: #f8fafc; --info-border: #cbd5e1;
+            --card-bg: #ffffff; --border: #e2e8f0;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+        h1 { color: #0f172a; text-align: center; margin-bottom: 0.2rem; font-size: 2.2rem; letter-spacing: -0.5px; }
+        p.subtitle { text-align: center; color: #64748b; margin-bottom: 2.5rem; font-size: 1.15rem; }
+        
+        .upload-zone { border: 3px dashed #94a3b8; padding: 3rem 2rem; text-align: center; background: #f0f9ff; border-radius: 16px; cursor: pointer; transition: all 0.2s ease-in-out; margin-bottom: 2rem; }
+        .upload-zone:hover { background: #e0f2fe; border-color: var(--primary); }
+        input[type="file"] { display: none; }
+        .btn { background: var(--primary); color: white; padding: 14px 28px; border-radius: 10px; cursor: pointer; border: none; font-size: 1.1rem; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3); transition: background 0.2s; }
+        .btn:hover { background: var(--primary-hover); }
+        
+        .results-container { display: none; flex-direction: column; gap: 2rem; animation: fadeIn 0.5s ease-in-out; }
+        .results-container.visible { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .panel { background: var(--card-bg); border-radius: 16px; padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .panel h2 { margin-top: 0; font-size: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; color: #0f172a; }
+        
+        .layer-list { list-style: none; padding: 0; margin: 0; }
+        .layer-item { padding: 0.85rem 1.2rem; border-radius: 10px; margin-bottom: 0.5rem; background: #f8fafc; border: 1px solid var(--border); display: flex; align-items: center; font-weight: 500; font-size: 1.05rem; }
+        .layer-item .num { background: #cbd5e1; color: #334155; padding: 0.25rem 0.6rem; border-radius: 6px; margin-right: 1rem; font-weight: 700; font-family: monospace; font-size: 1rem; }
+        
+        .layer-item.error { background: var(--danger-bg); border-color: var(--danger-border); color: #991b1b; }
+        .layer-item.error .num { background: var(--danger); color: white; }
+        .layer-item.success { background: var(--success-bg); border-color: var(--success-border); color: #065f46; }
+        .layer-item.success .num { background: var(--success); color: white; }
+        .layer-item.magic { background: var(--magic-bg); border-color: var(--magic-border); color: #5b21b6; }
+        .layer-item.magic .num { background: var(--magic); color: white; }
+        .layer-item.info { background: var(--info-bg); border-color: var(--info-border); color: #64748b; opacity: 0.8; }
+        .layer-item.info .num { background: var(--info-border); color: white; }
+
+        .tag { font-size: 0.85rem; margin-left: auto; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; }
+        .tag.anchor { background: #e2e8f0; color: #475569; }
+        .tag.moved { background: #d1fae5; color: #065f46; }
+
+        .diagnostic-card { background: var(--card-bg); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); border-left: 6px solid var(--border); margin-top: 1.5rem; width: 100%; box-sizing: border-box;}
+        .diagnostic-card h3 { margin-top: 0; font-size: 1.2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .card-danger { border-left-color: var(--danger); background: #fef2f2; }
+        .card-danger h3 { color: #991b1b; }
+        .card-warning { border-left-color: var(--warning); background: #fffbeb; }
+        .card-warning h3 { color: #b45309; }
+        .card-info { border-left-color: var(--info-border); background: #f8fafc; }
+        .card-info h3 { color: #334155; }
+
+        .issue-list { list-style: none; padding: 0; margin: 0; }
+        .issue-list li { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .card-danger .issue-list li { border-left: 4px solid var(--danger); }
+        .card-warning .issue-list li { border-left: 4px solid var(--warning); }
+        
+        .action-plan { background: #f0f9ff; border: 2px solid var(--primary); padding: 2rem; border-radius: 16px; width: 100%; box-sizing: border-box;}
+        .action-plan h2 { color: #0369a1; margin-top: 0; font-size: 1.6rem; margin-bottom: 1rem; border-bottom: none; }
+        .action-plan ol { padding-left: 1.5rem; margin-bottom: 0; font-size: 1.1rem; line-height: 1.8; color: #0f172a; }
+        
+        .status-hero { padding: 1.5rem; border-radius: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; border: 2px solid; }
+        .status-hero.needs-fix { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+        .status-hero.perfect { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+
+        .split-view { display: flex; gap: 2rem; flex-wrap: wrap; }
+        .split-view > div { flex: 1; min-width: 300px; }
+
+        .ai-warning { margin-top: 3rem; padding: 1rem; text-align: center; font-size: 0.9rem; color: #64748b; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+        code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <h1>👋 MoErgo Layer Buddy</h1>
+    <p class="subtitle">Upload your layout file. We'll find hidden bugs and show you exactly how to fix them.</p>
+
+    <div class="upload-zone" id="dropZone">
+        <label for="fileInput" class="btn">Select MoErgo JSON File</label>
+        <input type="file" id="fileInput" accept=".json">
+        <p style="margin-top: 1.5rem; color: #64748b; font-size: 0.95rem;">or drag and drop your file here</p>
+    </div>
+
+    <div class="results-container" id="resultsArea">
+        </div>
+
+    <div class="ai-warning">
+        🤖 <strong>Friendly Warning:</strong> This app uses AI-generated guidance to help you learn ZMK. While it tries its best to be accurate, it might occasionally misinterpret complex, custom layouts. Always double-check your setup in the official MoErgo editor!
+    </div>
+
+    <script>
+        const MASKING_BEHAVIORS = { "&mo": 0, "&lt": 0, "&sl": 0, "&layer": 0, "&ltt": 0, "&tog": 0, "&zip_temp_layer": 0 };
+        const ALL_LAYER_BEHAVIORS = { "&mo": 0, "&lt": 0, "&sl": 0, "&tog": 0, "&layer": 0, "&ltt": 0, "&to": 0, "&zip_temp_layer": 0 };
+
+        function getParamValue(param) {
+            if (param === undefined || param === null) return null;
+            return typeof param === "object" ? param.value : param;
+        }
+
+        function parseMoErgoFile(file, callback) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const rawData = JSON.parse(e.target.result);
+                    let root = rawData;
+                    
+                    if (rawData && typeof rawData === 'object') {
+                        if (rawData.layers) root = rawData;
+                        else if (rawData.keymap && rawData.keymap.layers) root = rawData.keymap;
+                        else if (rawData.layout && rawData.layout.layers) root = rawData.layout;
+                        else if (rawData.keymap) root = rawData.keymap; 
+                    }
+
+                    if (!root || !root.layers) throw new Error("Could not find the '.layers' array. Ensure this is a MoErgo JSON Backup.");
+                    if (!root.layer_names) root.layer_names = root.layers.map((_, i) => `Layer ${i}`);
+
+                    callback(null, root);
+                } catch (err) {
+                    callback(err, null);
+                }
+            };
+            reader.onerror = () => callback(new Error("Failed to read the file."), null);
+            reader.readAsText(file);
+        }
+
+        function analyzeAndSortLayers(root) {
+            const layerNames = root.layer_names || [];
+            const numLayers = Math.max(layerNames.length, (root.layers ? root.layers.length : 0));
+            
+            let magicLayerIndex = -1, lowerLayerIndex = -1;
+            layerNames.forEach((name, idx) => { 
+                if (name && typeof name === "string") {
+                    if (name.toLowerCase() === "magic") magicLayerIndex = idx; 
+                    if (name.toLowerCase() === "lower") lowerLayerIndex = idx;
+                }
+            });
+            
+            const customWrappers = {};
+            ['holdTaps', 'macros', 'tapDances', 'behaviors'].forEach(arrName => {
+                if (Array.isArray(root[arrName])) {
+                    root[arrName].forEach(item => {
+                        if (item.name && Array.isArray(item.bindings)) customWrappers[item.name] = { type: arrName, bindings: item.bindings };
+                    });
+                }
+            });
+
+            const criticalBugs = new Set(), trackpadBugs = new Set(), maskingNotices = new Set(), orphanedNotices = new Set();
+            const targetedLayers = new Set([0]); 
+            const problemLayers = new Set();
+            const dependencies = Array.from({ length: numLayers }, () => new Set());
+
+            function validateTarget(val, contextMsg, isMasking) {
+                if (val === null || val === undefined || val === "") {
+                    criticalBugs.add(`<strong>${contextMsg}</strong> has a layer-switch button that is completely empty. It doesn't know where to go.`);
+                    return null;
+                }
+                if (typeof val === "number") {
+                    if (val >= numLayers || val < 0) {
+                        criticalBugs.add(`<strong>${contextMsg}</strong> tries to open <strong>Layer ${val}</strong>, but that layer doesn't exist in your layout!`);
+                        return null;
+                    }
+                    targetedLayers.add(val);
+                    return isMasking ? val : null;
+                }
+                return null;
+            }
+
+            function extractTargets(rawNode, contextMsg, visited = new Set()) {
+                let targets = [];
+                if (!rawNode) return targets;
+
+                const node = typeof rawNode === "string" ? { value: rawNode, params: [] } : rawNode;
+                if (typeof node !== "object" || Array.isArray(node)) {
+                    if (Array.isArray(node)) node.forEach(child => targets.push(...extractTargets(child, contextMsg, visited)));
+                    return targets;
+                }
+
+                if (node.value) {
+                    if (ALL_LAYER_BEHAVIORS[node.value] !== undefined) {
+                        const pIdx = ALL_LAYER_BEHAVIORS[node.value];
+                        const val = getParamValue(node.params?.[pIdx]);
+                        const isMasking = MASKING_BEHAVIORS[node.value] !== undefined;
+                        const validTarget = validateTarget(val, contextMsg, isMasking);
+                        if (validTarget !== null) targets.push(validTarget);
+                    } 
+                    else if (node.value === "&magic" && magicLayerIndex !== -1) { targetedLayers.add(magicLayerIndex); targets.push(magicLayerIndex); }
+                    else if (node.value === "&lower" && lowerLayerIndex !== -1) { targetedLayers.add(lowerLayerIndex); targets.push(lowerLayerIndex); }
+                    else if (customWrappers[node.value] && customWrappers[node.value].type === 'holdTaps') {
+                        customWrappers[node.value].bindings.forEach((binding, idx) => {
+                            const bindNode = typeof binding === "string" ? { value: binding } : binding;
+                            if (ALL_LAYER_BEHAVIORS[bindNode.value] !== undefined) {
+                                const val = getParamValue(node.params?.[idx]);
+                                const isMasking = MASKING_BEHAVIORS[bindNode.value] !== undefined;
+                                const validTarget = validateTarget(val, contextMsg, isMasking);
+                                if (validTarget !== null) targets.push(validTarget);
+                            } else if (bindNode.value === "&magic" && magicLayerIndex !== -1) { targetedLayers.add(magicLayerIndex); targets.push(magicLayerIndex); }
+                        });
+                    }
+                    else if (customWrappers[node.value]) {
+                        if (!visited.has(node.value)) {
+                            visited.add(node.value);
+                            customWrappers[node.value].bindings.forEach(childNode => targets.push(...extractTargets(childNode, contextMsg, visited)));
+                            visited.delete(node.value);
+                        }
+                    }
+                }
+
+                for (const key in node) {
+                    if (node.hasOwnProperty(key)) {
+                        const child = node[key];
+                        if (key === "layers" && Array.isArray(child)) continue;
+                        if (Array.isArray(child)) child.forEach(c => targets.push(...extractTargets(c, contextMsg, visited)));
+                        else if (typeof child === "object" && child !== null) targets.push(...extractTargets(child, contextMsg, visited));
+                    }
+                }
+                return targets;
+            }
+
+            // Matrix Scan
+            if (Array.isArray(root.layers)) {
+                root.layers.forEach((layerKeys, sourceIdx) => {
+                    if (sourceIdx >= numLayers) return;
+                    const layerNameMsg = `Layer ${sourceIdx} (${layerNames[sourceIdx] || 'Unnamed'})`;
+                    layerKeys.forEach(node => {
+                        const targets = extractTargets(node, layerNameMsg);
+                        targets.forEach(targetIdx => {
+                            if (targetIdx <= sourceIdx) {
+                                problemLayers.add(sourceIdx);
+                                maskingNotices.add(`You have a button on <strong>${layerNameMsg}</strong> that opens <strong>Layer ${targetIdx}</strong>. Because Layer ${sourceIdx} is a higher number, it stays on top and blocks it.`);
+                            }
+                            if (dependencies[sourceIdx]) dependencies[sourceIdx].add(targetIdx);
+                        });
+                    });
+                });
+            }
+
+            // Combos Scan
+            if (Array.isArray(root.combos)) {
+                root.combos.forEach((combo, comboIdx) => {
+                    const comboName = combo.name || `Combo #${comboIdx + 1}`;
+                    const targets = extractTargets(combo, comboName);
+                    
+                    if (targets.length > 0) {
+                        let activeLayers = (Array.isArray(combo.layers) && combo.layers.length > 0) ? combo.layers : layerNames.map((_, i) => i);
+                        let globalComboFlagged = false;
+
+                        targets.forEach(targetIdx => {
+                            activeLayers.forEach(sourceIdx => {
+                                if (sourceIdx >= numLayers || sourceIdx < 0) return;
+
+                                if (targetIdx <= sourceIdx) {
+                                    problemLayers.add(sourceIdx);
+                                    if (activeLayers.length === numLayers) {
+                                        if (!globalComboFlagged) {
+                                            criticalBugs.add(`<strong>Global Combo:</strong> <code>${comboName}</code> opens <strong>Layer ${targetIdx}</strong>, but it triggers on <em>all layers</em>. If you use it from Layer ${targetIdx} or higher, it gets blocked! Fix it by changing the "Active Layers" setting in the editor.`);
+                                            globalComboFlagged = true;
+                                        }
+                                    } else {
+                                        maskingNotices.add(`<strong>${comboName}</strong> is allowed to trigger on Layer ${sourceIdx}, but it opens Layer ${targetIdx}. Layer ${sourceIdx} will stay on top and block it.`);
+                                    }
+                                }
+                                if (dependencies[sourceIdx]) dependencies[sourceIdx].add(targetIdx);
+                            });
+                        });
+                    }
+                });
+            }
+
+            // Trackpad Scan
+            if (Array.isArray(root.inputListeners)) {
+                root.inputListeners.forEach(listener => {
+                    if (["&cirque_lh_listener", "&cirque_rh_listener"].includes(listener.value) && Array.isArray(listener.nodes)) {
+                        let prevLayerIdx = Infinity; 
+                        listener.nodes.forEach(node => {
+                            const trackpadTargets = extractTargets(node, `Trackpad (${listener.value})`);
+                            trackpadTargets.forEach(t => targetedLayers.add(t));
+
+                            const nodeLayers = node.layers ? node.layers : (node.layer !== undefined ? [node.layer] : []);
+                            nodeLayers.forEach(currentLayer => {
+                                if (typeof currentLayer === "number") {
+                                    targetedLayers.add(currentLayer); 
+                                    if (currentLayer > prevLayerIdx) {
+                                        const currentName = layerNames[currentLayer] || "Unknown";
+                                        const prevName = layerNames[prevLayerIdx] || "Unknown";
+                                        trackpadBugs.add(`Trackpad settings read top-to-bottom. Your broad <strong>Layer ${prevLayerIdx} (${prevName})</strong> is listed <em>above</em> your specific <strong>Layer ${currentLayer} (${currentName})</strong>, which means Layer ${currentLayer} will always be ignored.`);
+                                    }
+                                    prevLayerIdx = currentLayer;
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+
+            // Orphans
+            layerNames.forEach((name, idx) => {
+                if (!targetedLayers.has(idx)) {
+                    orphanedNotices.add(`<strong>Layer ${idx} (${name || "Unnamed"})</strong> is unused. No buttons or combos point to it.`);
+                }
+            });
+
+            // Topological Sort
+            let inDegree = Array(numLayers).fill(0);
+            let adjList = Array(numLayers).fill().map(() => []);
+            const layersToSort = [];
+            for (let i = 1; i < numLayers; i++) { if (i !== magicLayerIndex) layersToSort.push(i); }
+
+            layersToSort.forEach(source => {
+                if (dependencies[source]) {
+                    dependencies[source].forEach(target => {
+                        if (layersToSort.includes(target)) { adjList[source].push(target); inDegree[target]++; }
+                    });
+                }
+            });
+
+            let queue = [];
+            layersToSort.forEach(i => { if (inDegree[i] === 0) queue.push(i); });
+
+            let middleOrder = [];
+            while (queue.length > 0) {
+                let current = queue.shift();
+                middleOrder.push(current);
+                adjList[current].forEach(neighbor => {
+                    inDegree[neighbor]--;
+                    if (inDegree[neighbor] === 0) queue.push(neighbor);
+                });
+            }
+            layersToSort.forEach(i => { if (!middleOrder.includes(i)) middleOrder.push(i); });
+
+            let finalOrder = [0, ...middleOrder];
+            if (magicLayerIndex !== -1) {
+                finalOrder.push(magicLayerIndex);
+                if (magicLayerIndex !== numLayers - 1) {
+                    problemLayers.add(magicLayerIndex);
+                    maskingNotices.add(`The <strong>Magic</strong> layer must be at the very bottom of your list so normal layers don't block it.`);
+                }
+            }
+
+            return {
+                names: layerNames, criticalBugs: Array.from(criticalBugs), trackpadBugs: Array.from(trackpadBugs),
+                maskingNotices: Array.from(maskingNotices), orphanedNotices: Array.from(orphanedNotices),
+                problemLayers: problemLayers, suggestedOrder: finalOrder, magicIndex: magicLayerIndex, targetedLayers: targetedLayers
+            };
+        }
+
+        function renderResults(data) {
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = ''; // Clear previous
+
+            let orderIsPerfect = true;
+            data.suggestedOrder.forEach((oldIdx, newIdx) => { if (oldIdx !== newIdx) orderIsPerfect = false; });
+            const hasBugs = data.criticalBugs.length > 0 || data.trackpadBugs.length > 0 || data.maskingNotices.length > 0;
+
+            // 1. HERO BANNER
+            if (!hasBugs && orderIsPerfect) {
+                resultsArea.innerHTML += `<div class="status-hero perfect">🎉 Awesome! Your keyboard layout logic is flawless. No fixes needed.</div>`;
+            } else {
+                resultsArea.innerHTML += `<div class="status-hero needs-fix">⚠️ We found a few things that need fixing! Follow the guide below.</div>`;
+            }
+
+            // 2. THE QUICK FIX (Action Plan + Target List)
+            if (!orderIsPerfect || data.trackpadBugs.length > 0) {
+                const targetListHtml = data.suggestedOrder.map((oldIdx, newIdx) => {
+                    const displayName = data.names[oldIdx] || "Unnamed Layer";
+                    if (oldIdx === 0) return `<li class="layer-item"><span class="num">${newIdx}</span> ${displayName} <span class="tag anchor">Base Layer</span></li>`;
+                    if (oldIdx === data.magicIndex) return `<li class="layer-item magic"><span class="num">${newIdx}</span> ${displayName} <span class="tag anchor" style="background:#c4b5fd; color:#4c1d95;">System Layer</span></li>`;
+                    let tag = oldIdx !== newIdx ? `<span class="tag moved">(Move from ${oldIdx})</span>` : '';
+                    return `<li class="layer-item success"><span class="num">${newIdx}</span> ${displayName} ${tag}</li>`;
+                }).join('');
+
+                resultsArea.innerHTML += `
+                    <div class="action-plan panel">
+                        <h2>🛠️ How to fix your layout:</h2>
+                        <div class="split-view">
+                            <div>
+                                <ol>
+                                    <li>Open your layout in the <strong>MoErgo web editor</strong>.</li>
+                                    <li>Click on the <strong>Layers</strong> tab on the left menu.</li>
+                                    <li><strong>Drag and drop</strong> your layers up or down until they match the Target Order list exactly.</li>
+                                    ${data.trackpadBugs.length > 0 ? '<li>Go to <strong>Input Listeners</strong> and re-order the Cirque blocks so specific speeds are above broad mouse layers.</li>' : ''}
+                                    <li>Click "Save" and rebuild your firmware. You're done!</li>
+                                </ol>
+                            </div>
+                            <div>
+                                <h3 style="margin-top:0; font-size:1.1rem; color:#334155;">🎯 Target Order</h3>
+                                <ul class="layer-list">${targetListHtml}</ul>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            // 3. THE DETAILS (Why?)
+            if (hasBugs || data.orphanedNotices.length > 0) {
+                let detailsHtml = `<div class="panel" style="background: transparent; border: none; box-shadow: none; padding: 0;">`;
+                detailsHtml += `<h2 style="font-size: 1.8rem; border: none; margin-bottom: 0;">What went wrong? (The Details)</h2>`;
+                detailsHtml += `<p style="color: #64748b; margin-top:0; margin-bottom: 1.5rem;">ZMK layers act like stacked sheets of clear plastic. If you open a lower-numbered layer, your current layer stays on top and blocks your view!</p>`;
+                
+                // Show Before State
+                const currentListHtml = data.names.map((name, idx) => {
+                    let statusClass = data.problemLayers.has(idx) ? 'error' : '';
+                    if (!statusClass && !data.targetedLayers.has(idx)) statusClass = 'info';
+                    return `<li class="layer-item ${statusClass}"><span class="num">${idx}</span> ${name || "Unnamed Layer"}</li>`;
+                }).join('');
+
+                detailsHtml += `
+                    <div class="split-view" style="margin-bottom: 2rem;">
+                        <div>
+                            <h3 style="margin-top:0; font-size:1.1rem; color:#334155;">Your Current Layers</h3>
+                            <ul class="layer-list">${currentListHtml}</ul>
+                        </div>
+                        <div>
+                            <p style="font-size: 0.95rem; color: #64748b; background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">Layers highlighted in <strong>Red</strong> contain buttons or combos that point to a lower layer. This means they are getting blocked by the layer you are currently typing on.</p>
+                        </div>
+                    </div>`;
+
+                if (data.criticalBugs.length > 0) {
+                    detailsHtml += `<div class="diagnostic-card card-danger"><h3>🚨 Critical Bugs (Fix these manually)</h3><ul class="issue-list">${data.criticalBugs.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+                }
+                if (data.trackpadBugs.length > 0) {
+                    detailsHtml += `<div class="diagnostic-card card-danger"><h3>🖱️ Trackpad Bugs</h3><ul class="issue-list">${data.trackpadBugs.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+                }
+                if (data.maskingNotices.length > 0) {
+                    detailsHtml += `<div class="diagnostic-card card-warning"><h3>⚠️ Blocked Buttons (Stacking Bugs)</h3><ul class="issue-list">${data.maskingNotices.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+                }
+                if (data.orphanedNotices.length > 0) {
+                    detailsHtml += `<div class="diagnostic-card card-info"><h3>ℹ️ Unused Layers (Safe to ignore)</h3><ul class="issue-list">${data.orphanedNotices.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+                }
+
+                detailsHtml += `</div>`;
+                resultsArea.innerHTML += detailsHtml;
+            }
+            resultsArea.classList.add('visible');
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--primary)"; dropZone.style.background = "#e0f2fe"; });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.borderColor = ""; dropZone.style.background = ""; });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = ""; dropZone.style.background = "";
+            if (e.dataTransfer.files.length) {
+                if (!e.dataTransfer.files[0].name.toLowerCase().endsWith('.json')) { alert("Please select a .json file. We can't read source code files!"); return; }
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                if (!e.target.files[0].name.toLowerCase().endsWith('.json')) { alert("Please select a .json file. We can't read source code files!"); return; }
+                processFile(e.target.files[0]);
+            }
+        });
+
+        function processFile(file) {
+            parseMoErgoFile(file, (err, rootData) => {
+                if (err) return alert("Parsing Error: " + err.message);
+                try {
+                    const data = analyzeAndSortLayers(rootData);
+                    renderResults(data);
+                } catch (analysisErr) {
+                    alert("Analysis Error: Something went wrong while scanning the layout. Check the console.");
+                    console.error(analysisErr);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
