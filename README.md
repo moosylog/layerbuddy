@@ -16,7 +16,7 @@ ZMK layer logic can be confusing. Layer Buddy analyzes your JSON layout backup, 
 
 ## 🚀 How to use
 
-1. Open the [MoErgo Web Editor](https://my.moergo.com/).
+1. Open the [MoErgo Layout Editor](https://my.moergo.com/).
 2. Go to **Settings** (⚙️) and click **Download Layout Backup** (it will save as a `.json` file).
 3. Drop that file into [MoErgo Layer Buddy](https://moosylog.github.io/layerbuddy/).
 4. Follow the green "Target Order" list to fix your layout!
