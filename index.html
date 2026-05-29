@@ -18,7 +18,6 @@
         h1 { color: #0f172a; text-align: center; margin-bottom: 0.2rem; font-size: 2.2rem; letter-spacing: -0.5px; font-weight: 800; }
         p.subtitle { text-align: center; color: #64748b; margin-bottom: 2.5rem; font-size: 1.15rem; }
         
-        /* Upload Zone */
         .upload-zone { border: 3px dashed #cbd5e1; padding: 4rem 2rem; text-align: center; background: #f8fafc; border-radius: 16px; cursor: pointer; transition: all 0.2s ease-in-out; margin-bottom: 2rem; }
         .upload-zone:hover { background: #f0f9ff; border-color: var(--primary); }
         .upload-icon { width: 48px; height: 48px; fill: #94a3b8; margin-bottom: 1rem; transition: fill 0.2s; }
@@ -48,7 +47,6 @@
         .tag.anchor { background: #e2e8f0; color: #475569; }
         .tag.moved { background: #d1fae5; color: #065f46; }
 
-        /* Accordions */
         details { background: var(--card-bg); border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); border-left: 6px solid var(--border); overflow: hidden; transition: all 0.2s ease; }
         details[open] { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding-bottom: 0.5rem; }
         summary { padding: 1.25rem 1.5rem; font-size: 1.2rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background: #fff; list-style: none; user-select: none; }
@@ -80,7 +78,6 @@
         .card-danger .issue-list li { border-left: 4px solid var(--danger); }
         .card-warning .issue-list li { border-left: 4px solid var(--warning); }
         
-        /* Action Plan */
         .action-plan { background: #f0f9ff; border: 2px solid var(--primary); padding: 2.5rem; border-radius: 16px; width: 100%; box-sizing: border-box; }
         .action-plan h2 { color: #0369a1; margin-top: 0; font-size: 1.6rem; margin-bottom: 1.5rem; border-bottom: none; }
         .action-plan ol { padding-left: 1.5rem; margin-bottom: 0; font-size: 1.1rem; line-height: 1.8; color: #0f172a; }
@@ -93,12 +90,10 @@
         .split-view { display: flex; gap: 3rem; flex-wrap: wrap; }
         .split-view > div { flex: 1; min-width: 300px; }
 
-        /* UPGRADED 2.5D VISUALIZER (Zero Overlap) */
         .viz-outer { background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; overflow: hidden; }
-        .stack-wrapper { position: relative; width: 300px; /* Height injected by JS to guarantee no overlap */ }
+        .stack-wrapper { position: relative; width: 300px; }
         .stack-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: rgba(241, 245, 249, 0.9); border: 2px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: flex-start; font-weight: bold; color: var(--text); box-shadow: 0 8px 12px -3px rgba(0,0,0,0.1); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(4px); padding: 0 1.5rem; box-sizing: border-box; font-size: 1.1rem; transform-origin: bottom center; cursor: crosshair; }
         
-        /* 2.5D Isometric Transform. translateY happens FIRST so it stays exactly in the container bounds */
         .stack-layer { transform: translateY(calc(var(--z-idx) * -25px)) rotateX(55deg) rotateZ(-20deg); }
         .viz-outer:hover .stack-layer { transform: translateY(calc(var(--z-idx) * -55px)) rotateX(40deg) rotateZ(-10deg); }
 
@@ -176,6 +171,9 @@
             const layerNames = root.layer_names || [];
             const numLayers = Math.max(layerNames.length, (root.layers ? root.layers.length : 0));
             
+            // Helpful format function for friendly labels
+            const getLayerLabel = (idx) => `Layer ${idx} (${escapeHtml(layerNames[idx] || 'Unnamed')})`;
+
             let magicLayerIndex = -1, lowerLayerIndex = -1;
             layerNames.forEach((name, idx) => { 
                 if (name && typeof name === "string") {
@@ -298,11 +296,11 @@
                 root.layers.forEach((layerKeys, sourceIdx) => {
                     if (sourceIdx >= numLayers) return;
                     layerKeys.forEach(node => {
-                        const targets = extractTargets(node, `Layer ${sourceIdx} (${layerNames[sourceIdx] || 'Unnamed'})`, sourceIdx);
+                        const targets = extractTargets(node, getLayerLabel(sourceIdx), sourceIdx);
                         targets.forEach(targetIdx => {
                             if (targetIdx < sourceIdx) {
                                 problemLayers.add(sourceIdx);
-                                maskingNotices.add(`You have a button on <strong>Layer ${sourceIdx}</strong> that opens <strong>Layer ${targetIdx}</strong>. Because Layer ${sourceIdx} is a higher number, it stays on top and blocks it.`);
+                                maskingNotices.add(`A button on <strong>${getLayerLabel(sourceIdx)}</strong> tries to open <strong>${getLayerLabel(targetIdx)}</strong>. Because ${getLayerLabel(sourceIdx)} is a higher number, it stays on top and blocks it.`);
                             }
                             if (dependencies[sourceIdx] && targetIdx !== sourceIdx) dependencies[sourceIdx].add(targetIdx);
                         });
@@ -326,11 +324,11 @@
                                     problemLayers.add(sourceIdx);
                                     if (isGlobal) {
                                         if (!globalComboFlagged) {
-                                            maskingNotices.add(`<strong>Global Combo:</strong> <code>${comboName}</code> opens <strong>Layer ${targetIdx}</strong>, but triggers on <em>all</em> layers. If you use it from Layer ${targetIdx + 1} or higher, it gets blocked! <span class="fix-hint">💡 Fix: Restrict 'Active Layers' in the editor so it only triggers on layers up to Layer ${targetIdx}.</span>`);
+                                            maskingNotices.add(`<strong>Global Combo:</strong> <code>${comboName}</code> opens <strong>${getLayerLabel(targetIdx)}</strong>, but triggers on <em>all</em> layers. If you use it from Layer ${targetIdx + 1} or higher, it gets blocked! <span class="fix-hint">💡 Fix: Restrict 'Active Layers' in the editor so it only triggers on layers up to ${getLayerLabel(targetIdx)}.</span>`);
                                             globalComboFlagged = true;
                                         }
                                     } else {
-                                        maskingNotices.add(`<code>${comboName}</code> triggers on Layer ${sourceIdx}, but tries to open Layer ${targetIdx}. Layer ${sourceIdx} will remain on top and block it.`);
+                                        maskingNotices.add(`<code>${comboName}</code> triggers on ${getLayerLabel(sourceIdx)}, but tries to open ${getLayerLabel(targetIdx)}. ${getLayerLabel(sourceIdx)} will remain on top and block it.`);
                                     }
                                 }
                                 if (dependencies[sourceIdx] && targetIdx !== sourceIdx) dependencies[sourceIdx].add(targetIdx);
@@ -351,7 +349,7 @@
                                 if (typeof currentLayer === "number") {
                                     targetedLayers.add(currentLayer); 
                                     if (currentLayer > prevLayerIdx) {
-                                        trackpadBugs.add(`Trackpad settings read top-to-bottom. Your broad <strong>Layer ${prevLayerIdx}</strong> is listed <em>above</em> your specific <strong>Layer ${currentLayer}</strong>. Layer ${currentLayer} will always be ignored.`);
+                                        trackpadBugs.add(`Trackpad settings read top-to-bottom. Your broad <strong>${getLayerLabel(prevLayerIdx)}</strong> is listed <em>above</em> your specific <strong>${getLayerLabel(currentLayer)}</strong>. ${getLayerLabel(currentLayer)} will always be ignored.`);
                                     }
                                     prevLayerIdx = currentLayer;
                                 }
@@ -366,13 +364,13 @@
                 const lowestMomentary = Math.min(...Array.from(momentaryLayerTargets).filter(x => x > 0));
                 
                 if (highestBase > lowestMomentary) {
-                    maskingNotices.add(`<strong>Base Layer Trap:</strong> You have an Alternate Base Layer (like Gaming) at <strong>Layer ${highestBase}</strong>, which is stacked higher than your Symbol layers. If you turn on Gaming mode, it blocks your symbols! <span class="fix-hint">💡 Fix: Drag your Alternate Base Layers down so they sit right above your default QWERTY layer.</span>`);
+                    maskingNotices.add(`<strong>Base Layer Trap:</strong> You have an Alternate Base Layer at <strong>${getLayerLabel(highestBase)}</strong>, which is stacked higher than your Symbol layers (like ${getLayerLabel(lowestMomentary)}). If you turn on ${getLayerLabel(highestBase)}, it blocks your symbols! <span class="fix-hint">💡 Fix: Drag your Alternate Base Layers down so they sit right above your default Base Layer (${getLayerLabel(0)}).</span>`);
                     problemLayers.add(highestBase);
                 }
             }
 
             layerNames.forEach((name, idx) => {
-                if (!targetedLayers.has(idx)) orphanedNotices.add(`<strong>Layer ${idx} (${name || "Unnamed"})</strong> is unused. No buttons or combos point to it.`);
+                if (!targetedLayers.has(idx)) orphanedNotices.add(`<strong>${getLayerLabel(idx)}</strong> is unused. No buttons or combos point to it.`);
             });
 
             let inDegree = Array(numLayers).fill(0);
@@ -406,7 +404,7 @@
                 finalOrder.push(magicLayerIndex);
                 if (magicLayerIndex !== numLayers - 1) {
                     problemLayers.add(magicLayerIndex);
-                    maskingNotices.add(`The <strong>Magic</strong> layer must be at the very bottom of your list so normal layers don't block it.`);
+                    maskingNotices.add(`The <strong>${getLayerLabel(magicLayerIndex)}</strong> must be at the very bottom of your list so normal layers don't block it.`);
                 }
             }
 
@@ -426,14 +424,12 @@
             data.suggestedOrder.forEach((oldIdx, newIdx) => { if (oldIdx !== newIdx) orderIsPerfect = false; });
             const hasBugs = data.criticalBugs.length > 0 || data.trackpadBugs.length > 0 || data.maskingNotices.length > 0;
 
-            // 1. HERO BANNER
             if (!hasBugs && orderIsPerfect) {
                 resultsArea.innerHTML += `<div class="status-hero perfect">🎉 Awesome! Your keyboard layout logic is flawless.</div>`;
             } else {
                 resultsArea.innerHTML += `<div class="status-hero needs-fix">⚠️ We found a few bugs! Just follow the Action Plan below to fix them.</div>`;
             }
 
-            // 2. THE ACTION PLAN
             if (!orderIsPerfect || data.trackpadBugs.length > 0) {
                 const targetListHtml = data.suggestedOrder.map((oldIdx, newIdx) => {
                     const displayName = data.names[oldIdx] || "Unnamed Layer";
@@ -464,14 +460,12 @@
                     </div>`;
             }
 
-            // 3. THE 2.5D VISUALIZER & ACCORDIONS
             if (hasBugs || data.orphanedNotices.length > 0 || !orderIsPerfect) {
                 let detailsHtml = `<div style="margin-top: 1rem;">`;
                 
                 if (data.maskingNotices.length > 0) {
                     
-                    // Build 2.5D Stack that absolutely guarantees no text overlap
-                    const hoverZGap = 55; // The max distance layers will travel on hover
+                    const hoverZGap = 55; 
                     const physicalCardHeight = 120;
                     const wrapperHeight = physicalCardHeight + (data.names.length * hoverZGap);
                     
@@ -576,7 +570,7 @@
                             ${data.usesToggles ? `
                             <div class="course-card">
                                 <h4>🔀 The Toggle Trap</h4>
-                                <p>You are using <code>&amp;tog</code>. Remember: ZMK adds toggled layers to a permanent stack. If you toggle Layer 5 ON, it stays there forever until you toggle it OFF. Always make sure Layer 5 has a button on it that toggles itself back off, otherwise you'll be trapped!</p>
+                                <p>You are using <code>&amp;tog</code>. Remember: ZMK adds toggled layers to a permanent stack. If you toggle a layer ON, it stays there forever until you toggle it OFF. Always make sure a toggled layer has a button to toggle itself back off, otherwise you'll be trapped!</p>
                             </div>` : ''}
                             ${data.usesHRM ? `
                             <div class="course-card">
