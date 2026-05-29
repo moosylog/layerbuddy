@@ -4,7 +4,7 @@
 
 A smart, beginner-friendly diagnostic tool for your MoErgo keyboard layouts. 
 
-ZMK layer logic can be confusing. Layer Buddy analyzes your JSON layout backup, instantly finds hidden stacking bugs, and gives you a simple drag-and-drop Action Plan to fix them.
+ZMK layer logic can be **very confusing**. Layer Buddy analyzes your JSON layout backup, instantly finds hidden stacking bugs, and gives you a simple drag-and-drop Action Plan to fix them.
 
 ## ✨ What it catches
 
