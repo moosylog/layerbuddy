@@ -5,137 +5,202 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoErgo Layer Buddy</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
         :root {
-            --bg: #f8fafc; --text: #334155; --primary: #0ea5e9; --primary-hover: #0284c7;
-            --success: #10b981; --success-bg: #ecfdf5; --success-border: #6ee7b7;
-            --danger: #ef4444; --danger-bg: #fef2f2; --danger-border: #fca5a5;
-            --warning: #f59e0b; --warning-bg: #fffbeb; --warning-border: #fcd34d;
-            --magic: #8b5cf6; --magic-bg: #f5f3ff; --magic-border: #c4b5fd;
-            --info: #64748b; --info-bg: #f8fafc; --info-border: #cbd5e1;
-            --card-bg: #ffffff; --border: #e2e8f0;
+            --bg-color: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --surface-hover: rgba(51, 65, 85, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.4);
+            --danger: #f87171;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --danger-glow: rgba(239, 68, 68, 0.4);
+            --success: #34d399;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --success-glow: rgba(52, 211, 153, 0.4);
+            --warning: #fbbf24;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --magic: #c084fc;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; }
-        h1 { color: #0f172a; text-align: center; margin-bottom: 0.2rem; font-size: 2.2rem; letter-spacing: -0.5px; font-weight: 800; }
-        p.subtitle { text-align: center; color: #64748b; margin-bottom: 2.5rem; font-size: 1.15rem; }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background-color: var(--bg-color); 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main); 
+            padding: 3rem 1.5rem; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            line-height: 1.6; 
+            min-height: 100vh;
+        }
+
+        /* Typography */
+        h1 { text-align: center; margin-bottom: 0.5rem; font-size: 3rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(to right, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.subtitle { text-align: center; color: var(--text-muted); margin-bottom: 3rem; font-size: 1.2rem; }
         
-        .upload-zone { border: 3px dashed #cbd5e1; padding: 4rem 2rem; text-align: center; background: #f8fafc; border-radius: 16px; cursor: pointer; transition: all 0.2s ease-in-out; margin-bottom: 2rem; }
-        .upload-zone:hover { background: #f0f9ff; border-color: var(--primary); }
-        .upload-icon { width: 48px; height: 48px; fill: #94a3b8; margin-bottom: 1rem; transition: fill 0.2s; }
-        .upload-zone:hover .upload-icon { fill: var(--primary); }
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Upload Zone */
+        .upload-container { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-container.hidden { opacity: 0; transform: scale(0.95); height: 0; overflow: hidden; margin: 0; padding: 0; pointer-events: none; }
+        
+        .upload-zone { border: 2px dashed rgba(56, 189, 248, 0.5); padding: 5rem 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .upload-zone:hover { border-color: var(--primary); background: rgba(56, 189, 248, 0.05); box-shadow: 0 0 30px var(--primary-glow); }
+        .upload-icon { width: 64px; height: 64px; fill: var(--primary); margin-bottom: 1.5rem; filter: drop-shadow(0 0 8px var(--primary-glow)); transition: transform 0.3s ease; }
+        .upload-zone:hover .upload-icon { transform: translateY(-5px); }
         input[type="file"] { display: none; }
-        .btn { background: var(--primary); color: white; padding: 14px 32px; border-radius: 10px; cursor: pointer; border: none; font-size: 1.1rem; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3); transition: all 0.2s; display: inline-block; }
-        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(14, 165, 233, 0.4); }
         
-        .results-container { display: none; flex-direction: column; gap: 1.5rem; animation: fadeIn 0.5s ease-in-out; }
+        /* Small Reset Button */
+        .reset-btn { display: none; margin: 0 auto 2rem auto; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
+        .reset-btn:hover { color: var(--text-main); border-color: var(--text-muted); }
+        .reset-btn.visible { display: block; animation: fadeIn 0.5s forwards; }
+
+        /* Animations */
+        .stagger-1 { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; opacity: 0; }
+        .stagger-2 { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; opacity: 0; }
+        .stagger-3 { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; opacity: 0; }
+        .stagger-4 { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; opacity: 0; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        /* Results Container */
+        .results-container { display: none; flex-direction: column; gap: 2rem; }
         .results-container.visible { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .layer-list { list-style: none; padding: 0; margin: 0; }
-        .layer-item { padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 0.5rem; background: #f8fafc; border: 1px solid var(--border); display: flex; align-items: center; font-weight: 500; font-size: 1.05rem; }
-        .layer-item .num { background: #cbd5e1; color: #334155; padding: 0.2rem 0.6rem; border-radius: 6px; margin-right: 1rem; font-weight: 700; font-family: monospace; font-size: 1rem; }
+        /* Status Hero */
+        .status-hero { padding: 1.5rem 2rem; border-radius: 16px; text-align: center; font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 1rem; border: 1px solid; }
+        .status-hero.needs-fix { background: var(--danger-bg); border-color: rgba(248, 113, 113, 0.3); color: #fecaca; box-shadow: 0 0 40px var(--danger-glow); }
+        .status-hero.perfect { background: var(--success-bg); border-color: rgba(52, 211, 153, 0.3); color: #a7f3d0; box-shadow: 0 0 40px var(--success-glow); }
+
+        /* Action Plan */
+        .action-plan { padding: 2.5rem; position: relative; overflow: hidden; border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 0 40px rgba(56, 189, 248, 0.1); }
+        .action-plan::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, var(--primary), var(--magic)); }
+        .action-plan h2 { color: #e0f2fe; margin-top: 0; font-size: 1.8rem; margin-bottom: 1.5rem; letter-spacing: -0.5px; }
+        .action-plan ol { padding-left: 1.5rem; margin-bottom: 0; font-size: 1.15rem; color: #cbd5e1; }
+        .action-plan ol li { margin-bottom: 1rem; }
+        .action-plan ol li strong { color: #f8fafc; }
         
-        .layer-item.error { background: var(--danger-bg); border-color: var(--danger-border); color: #991b1b; }
-        .layer-item.error .num { background: var(--danger); color: white; }
-        .layer-item.success { background: var(--success-bg); border-color: var(--success-border); color: #065f46; }
-        .layer-item.success .num { background: var(--success); color: white; }
-        .layer-item.magic { background: var(--magic-bg); border-color: var(--magic-border); color: #5b21b6; }
-        .layer-item.magic .num { background: var(--magic); color: white; }
-        .layer-item.info { background: var(--info-bg); border-color: var(--info-border); color: #64748b; opacity: 0.8; }
-        .layer-item.info .num { background: var(--info-border); color: white; }
-
-        .tag { font-size: 0.85rem; margin-left: auto; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; }
-        .tag.anchor { background: #e2e8f0; color: #475569; }
-        .tag.moved { background: #d1fae5; color: #065f46; }
-
-        details { background: var(--card-bg); border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); border-left: 6px solid var(--border); overflow: hidden; transition: all 0.2s ease; }
-        details[open] { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding-bottom: 0.5rem; }
-        summary { padding: 1.25rem 1.5rem; font-size: 1.2rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background: #fff; list-style: none; user-select: none; }
-        summary::-webkit-details-marker { display: none; } 
-        summary:hover { background: #f8fafc; }
-        .summary-title { display: flex; align-items: center; gap: 0.75rem; }
-        .chevron { transition: transform 0.3s ease; color: #94a3b8; font-size: 1rem; }
-        details[open] summary .chevron { transform: rotate(180deg); }
-        details[open] summary { border-bottom: 1px solid var(--border); }
-        .details-content { padding: 1.5rem; font-size: 1.05rem; }
-        .details-content p { margin-top: 0; color: #475569; line-height: 1.7; }
-
-        .badge { font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 99px; font-weight: 700; margin-left: 0.5rem; display: inline-block;}
-        .badge-danger { background: var(--danger); color: white; }
-        .badge-warning { background: var(--warning); color: white; }
-        .badge-info { background: var(--info-border); color: white; }
-
-        .card-danger { border-left-color: var(--danger); }
-        .card-danger .summary-title { color: #991b1b; }
-        .card-warning { border-left-color: var(--warning); }
-        .card-warning .summary-title { color: #b45309; }
-        .card-info { border-left-color: var(--info-border); }
-        .card-info .summary-title { color: #334155; }
-        .card-purple { border-left-color: #d946ef; }
-        .card-purple .summary-title { color: #86198f; }
-
-        .issue-list { list-style: none; padding: 0; margin: 0; }
-        .issue-list li { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; font-size: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); line-height: 1.6; }
-        .card-danger .issue-list li { border-left: 4px solid var(--danger); }
-        .card-warning .issue-list li { border-left: 4px solid var(--warning); }
-        
-        .action-plan { background: #f0f9ff; border: 2px solid var(--primary); padding: 2.5rem; border-radius: 16px; width: 100%; box-sizing: border-box; }
-        .action-plan h2 { color: #0369a1; margin-top: 0; font-size: 1.6rem; margin-bottom: 1.5rem; border-bottom: none; }
-        .action-plan ol { padding-left: 1.5rem; margin-bottom: 0; font-size: 1.1rem; line-height: 1.8; color: #0f172a; }
-        .action-plan ol li { margin-bottom: 0.75rem; }
-        
-        .status-hero { padding: 1.5rem; border-radius: 12px; text-align: center; font-size: 1.25rem; font-weight: bold; border: 2px solid; }
-        .status-hero.needs-fix { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
-        .status-hero.perfect { background: #ecfdf5; border-color: #10b981; color: #065f46; }
-
+        /* Split Views */
         .split-view { display: flex; gap: 3rem; flex-wrap: wrap; }
         .split-view > div { flex: 1; min-width: 300px; }
 
-        .viz-outer { background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; overflow: hidden; }
-        .stack-wrapper { position: relative; width: 300px; }
-        .stack-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; background: rgba(241, 245, 249, 0.9); border: 2px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: flex-start; font-weight: bold; color: var(--text); box-shadow: 0 8px 12px -3px rgba(0,0,0,0.1); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(4px); padding: 0 1.5rem; box-sizing: border-box; font-size: 1.1rem; transform-origin: bottom center; cursor: crosshair; }
+        /* Layer Lists */
+        .layer-list { list-style: none; padding: 0; margin: 0; }
+        .layer-item { padding: 0.85rem 1.25rem; border-radius: 12px; margin-bottom: 0.75rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); display: flex; align-items: center; font-weight: 500; font-size: 1.05rem; color: #e2e8f0; transition: transform 0.2s; }
+        .layer-item:hover { transform: translateX(5px); border-color: rgba(255,255,255,0.2); }
+        .layer-item .num { background: rgba(255,255,255,0.1); color: #fff; padding: 0.2rem 0.7rem; border-radius: 8px; margin-right: 1rem; font-weight: 700; font-family: monospace; font-size: 1.1rem; }
         
-        .stack-layer { transform: translateY(calc(var(--z-idx) * -25px)) rotateX(55deg) rotateZ(-20deg); }
-        .viz-outer:hover .stack-layer { transform: translateY(calc(var(--z-idx) * -55px)) rotateX(40deg) rotateZ(-10deg); }
+        .layer-item.error { border-color: rgba(239, 68, 68, 0.5); background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent); }
+        .layer-item.error .num { background: var(--danger); box-shadow: 0 0 10px var(--danger-glow); }
+        .layer-item.success { border-color: rgba(52, 211, 153, 0.3); }
+        .layer-item.success .num { background: var(--success); color: #064e3b; box-shadow: 0 0 10px var(--success-glow); }
+        .layer-item.magic { border-color: rgba(192, 132, 252, 0.3); }
+        .layer-item.magic .num { background: var(--magic); box-shadow: 0 0 10px rgba(192, 132, 252, 0.4); }
 
-        .stack-layer.base { background: rgba(209, 250, 229, 0.95); border-color: var(--success); color: #065f46; }
-        .stack-layer.blocking { background: rgba(254, 226, 226, 0.95); border-color: var(--danger); color: #991b1b; }
-        .stack-layer .l-icon { margin-right: 0.75rem; font-size: 1.3rem; }
+        .tag { font-size: 0.8rem; margin-left: auto; padding: 0.25rem 0.75rem; border-radius: 8px; font-weight: 600; background: rgba(255,255,255,0.05); color: #94a3b8; }
+        .tag.anchor { background: rgba(56, 189, 248, 0.1); color: var(--primary); }
         
-        .viz-legend { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; font-size: 0.95rem; color: #475569; flex-wrap: wrap; }
-        .viz-legend-item { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
-        .viz-box { width: 16px; height: 16px; border-radius: 4px; }
-        .viz-glass { background: #f1f5f9; border: 2px solid var(--border); }
-        .viz-solid { background: #fef2f2; border: 2px solid #ef4444; }
-        .viz-base { background: #d1fae5; border: 2px solid #10b981; }
+        /* 2.5D Animated Isometric Visualizer */
+        .viz-outer { padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; overflow: visible; background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 100%); }
+        .stack-wrapper { position: relative; width: 340px; animation: float 6s ease-in-out infinite; }
+        .stack-layer { 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 140px; 
+            background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; 
+            display: flex; align-items: center; padding: 0 1.5rem; box-sizing: border-box; 
+            font-size: 1.15rem; font-weight: 600; color: #f1f5f9; cursor: pointer;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: -10px 20px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            transform-origin: bottom center; 
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+            transform: translateY(calc(var(--z-idx) * -28px)) rotateX(55deg) rotateZ(-20deg); 
+        }
+        
+        .viz-outer:hover .stack-layer { transform: translateY(calc(var(--z-idx) * -65px)) rotateX(40deg) rotateZ(-10deg); background: rgba(30, 41, 59, 0.95); }
 
-        .course-card { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #f5d0fe; }
-        .course-card h4 { color: #a21caf; margin-top: 0; margin-bottom: 0.5rem; font-size: 1.15rem; }
-        .course-card p { margin-top: 0; margin-bottom: 0; color: #4a044e; font-size: 1rem; line-height: 1.6; }
+        .stack-layer.base { background: rgba(6, 78, 59, 0.8); border-color: rgba(52, 211, 153, 0.5); box-shadow: -10px 20px 30px rgba(0,0,0,0.5), 0 0 20px rgba(52, 211, 153, 0.1); }
+        .stack-layer.blocking { background: rgba(127, 29, 29, 0.9); border-color: rgba(248, 113, 113, 0.6); box-shadow: -10px 20px 30px rgba(0,0,0,0.5), 0 0 30px rgba(239, 68, 68, 0.3); }
+        .stack-layer .l-icon { margin-right: 1rem; font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        
+        .viz-legend { display: flex; gap: 1.5rem; justify-content: center; margin-top: 3rem; font-size: 0.95rem; color: var(--text-muted); flex-wrap: wrap; }
+        .viz-legend-item { display: flex; align-items: center; gap: 0.5rem; }
+        .viz-box { width: 14px; height: 14px; border-radius: 4px; }
+        .viz-glass { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.2); }
+        .viz-solid { background: rgba(127, 29, 29, 0.9); border: 1px solid rgba(248, 113, 113, 0.6); }
 
-        .ai-warning { margin-top: 3rem; padding: 1rem; text-align: center; font-size: 0.9rem; color: #64748b; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0; }
-        code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #ef4444; font-weight: bold; }
-        .fix-hint { display: block; margin-top: 0.75rem; color: #0369a1; font-size: 0.95em; font-weight: 600; padding-top: 0.75rem; border-top: 1px dashed #e2e8f0; }
+        /* Sleek Accordions */
+        details { background: rgba(15, 23, 42, 0.4); border-radius: 16px; margin-bottom: 1rem; border: 1px solid var(--border); overflow: hidden; transition: all 0.3s ease; }
+        details[open] { background: rgba(15, 23, 42, 0.8); border-color: rgba(255,255,255,0.2); }
+        summary { padding: 1.25rem 1.5rem; font-size: 1.15rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; list-style: none; user-select: none; }
+        summary::-webkit-details-marker { display: none; } 
+        summary:hover { background: rgba(255,255,255,0.02); }
+        .summary-title { display: flex; align-items: center; gap: 0.75rem; color: #e2e8f0; }
+        .chevron { transition: transform 0.3s ease; color: #64748b; }
+        details[open] summary .chevron { transform: rotate(180deg); }
+        details[open] summary { border-bottom: 1px solid var(--border); }
+        .details-content { padding: 1.5rem; font-size: 1rem; color: #cbd5e1; }
+        
+        .badge { font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 99px; font-weight: 700; margin-left: 0.5rem; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.5); }
+
+        .issue-list { list-style: none; padding: 0; margin: 0; }
+        .issue-list li { background: rgba(0,0,0,0.2); padding: 1rem 1.25rem; border-radius: 12px; margin-bottom: 0.75rem; border: 1px solid var(--border); border-left: 4px solid var(--text-muted); }
+        details.danger-theme .issue-list li { border-left-color: var(--danger); }
+        details.warning-theme .issue-list li { border-left-color: var(--warning); }
+
+        /* Course Cards */
+        .course-card { background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 16px; margin-bottom: 1rem; border: 1px solid rgba(192, 132, 252, 0.3); }
+        .course-card h4 { color: #e879f9; margin-top: 0; margin-bottom: 0.75rem; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; }
+        .course-card p { margin: 0; color: #cbd5e1; }
+
+        code { background: rgba(0,0,0,0.4); padding: 0.2rem 0.5rem; border-radius: 6px; font-family: monospace; color: #fca5a5; border: 1px solid rgba(255,255,255,0.05); }
+        .fix-hint { display: block; margin-top: 0.75rem; color: #7dd3fc; font-size: 0.95em; font-weight: 600; padding-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); }
+        
+        .ai-warning { margin-top: 4rem; padding: 1.5rem; text-align: center; font-size: 0.9rem; color: #64748b; }
     </style>
 </head>
 <body>
 
-    <h1>👋 MoErgo Layer Buddy</h1>
-    <p class="subtitle">Upload your layout. We'll find hidden bugs and give you the exact steps to fix them.</p>
+    <h1>MoErgo Layer Buddy</h1>
+    <p class="subtitle">Upload your layout. Find hidden bugs. Fix them instantly.</p>
 
-    <div class="upload-zone" id="dropZone">
+    <div class="glass-panel upload-zone upload-container" id="dropZone">
         <svg class="upload-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/24/svg">
             <path d="M19 13v5c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2v-5H3v5c0 2.2 1.8 4 4 4h10c2.2 0 4-1.8 4-4v-5h-2zm-6-2.2l2.6 2.6 1.4-1.4-5-5-5 5 1.4 1.4 2.6-2.6V17h2v-6.2z"/>
         </svg>
         <br>
-        <label for="fileInput" class="btn">Select MoErgo JSON File</label>
+        <label for="fileInput" class="btn" style="background: linear-gradient(135deg, var(--primary), #818cf8); border: none;">Select MoErgo .JSON File</label>
         <input type="file" id="fileInput" accept=".json">
-        <p style="margin-top: 1.5rem; color: #64748b; font-size: 0.95rem;">or drag and drop your layout file here</p>
+        <p style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">or drag and drop your file here</p>
     </div>
+
+    <button class="reset-btn" id="resetBtn" onclick="location.reload()">Upload another layout</button>
 
     <div class="results-container" id="resultsArea"></div>
 
-    <div class="ai-warning">
-        🤖 <strong>Friendly Warning:</strong> This app uses AI-assisted logic to help you learn ZMK. While it is highly accurate, it might occasionally misinterpret complex custom layouts. Always double-check your setup in the editor!
+    <div class="ai-warning stagger-4">
+        🤖 <strong>AI-Assisted Tool:</strong> Designed to help you learn ZMK. Always verify your logic in the official MoErgo editor!
     </div>
 
     <script>
@@ -170,8 +235,6 @@
         function analyzeAndSortLayers(root) {
             const layerNames = root.layer_names || [];
             const numLayers = Math.max(layerNames.length, (root.layers ? root.layers.length : 0));
-            
-            // Helpful format function for friendly labels
             const getLayerLabel = (idx) => `Layer ${idx} (${escapeHtml(layerNames[idx] || 'Unnamed')})`;
 
             let magicLayerIndex = -1, lowerLayerIndex = -1;
@@ -291,7 +354,6 @@
                 return targets;
             }
 
-            // Core Scans
             if (Array.isArray(root.layers)) {
                 root.layers.forEach((layerKeys, sourceIdx) => {
                     if (sourceIdx >= numLayers) return;
@@ -300,7 +362,7 @@
                         targets.forEach(targetIdx => {
                             if (targetIdx < sourceIdx) {
                                 problemLayers.add(sourceIdx);
-                                maskingNotices.add(`A button on <strong>${getLayerLabel(sourceIdx)}</strong> tries to open <strong>${getLayerLabel(targetIdx)}</strong>. Because ${getLayerLabel(sourceIdx)} is a higher number, it stays on top and blocks it.`);
+                                maskingNotices.add(`A button on <strong>${getLayerLabel(sourceIdx)}</strong> tries to open <strong>${getLayerLabel(targetIdx)}</strong>. Because ${getLayerLabel(sourceIdx)} is higher up, it blocks the view!`);
                             }
                             if (dependencies[sourceIdx] && targetIdx !== sourceIdx) dependencies[sourceIdx].add(targetIdx);
                         });
@@ -324,7 +386,7 @@
                                     problemLayers.add(sourceIdx);
                                     if (isGlobal) {
                                         if (!globalComboFlagged) {
-                                            maskingNotices.add(`<strong>Global Combo:</strong> <code>${comboName}</code> opens <strong>${getLayerLabel(targetIdx)}</strong>, but triggers on <em>all</em> layers. If you use it from Layer ${targetIdx + 1} or higher, it gets blocked! <span class="fix-hint">💡 Fix: Restrict 'Active Layers' in the editor so it only triggers on layers up to ${getLayerLabel(targetIdx)}.</span>`);
+                                            maskingNotices.add(`<strong>Global Combo:</strong> <code>${comboName}</code> opens <strong>${getLayerLabel(targetIdx)}</strong>, but triggers on <em>all</em> layers. If used from a higher layer, it gets blocked! <span class="fix-hint">💡 Fix: Restrict 'Active Layers' so it only triggers on layers up to ${getLayerLabel(targetIdx)}.</span>`);
                                             globalComboFlagged = true;
                                         }
                                     } else {
@@ -349,7 +411,7 @@
                                 if (typeof currentLayer === "number") {
                                     targetedLayers.add(currentLayer); 
                                     if (currentLayer > prevLayerIdx) {
-                                        trackpadBugs.add(`Trackpad settings read top-to-bottom. Your broad <strong>${getLayerLabel(prevLayerIdx)}</strong> is listed <em>above</em> your specific <strong>${getLayerLabel(currentLayer)}</strong>. ${getLayerLabel(currentLayer)} will always be ignored.`);
+                                        trackpadBugs.add(`Trackpads read lists top-to-bottom. Your broad <strong>${getLayerLabel(prevLayerIdx)}</strong> is listed <em>above</em> your specific <strong>${getLayerLabel(currentLayer)}</strong>. ${getLayerLabel(currentLayer)} will always be ignored.`);
                                     }
                                     prevLayerIdx = currentLayer;
                                 }
@@ -364,7 +426,7 @@
                 const lowestMomentary = Math.min(...Array.from(momentaryLayerTargets).filter(x => x > 0));
                 
                 if (highestBase > lowestMomentary) {
-                    maskingNotices.add(`<strong>Base Layer Trap:</strong> You have an Alternate Base Layer at <strong>${getLayerLabel(highestBase)}</strong>, which is stacked higher than your Symbol layers (like ${getLayerLabel(lowestMomentary)}). If you turn on ${getLayerLabel(highestBase)}, it blocks your symbols! <span class="fix-hint">💡 Fix: Drag your Alternate Base Layers down so they sit right above your default Base Layer (${getLayerLabel(0)}).</span>`);
+                    maskingNotices.add(`<strong>Base Layer Trap:</strong> You have an Alternate Base Layer at <strong>${getLayerLabel(highestBase)}</strong> stacked higher than your Symbol layers. Turning it on will block your symbols! <span class="fix-hint">💡 Fix: Drag your Alternate Base Layers down right above your default Base Layer.</span>`);
                     problemLayers.add(highestBase);
                 }
             }
@@ -417,6 +479,9 @@
         }
 
         function renderResults(data) {
+            document.getElementById('dropZone').classList.add('hidden');
+            document.getElementById('resetBtn').classList.add('visible');
+
             const resultsArea = document.getElementById('resultsArea');
             resultsArea.innerHTML = ''; 
 
@@ -424,24 +489,26 @@
             data.suggestedOrder.forEach((oldIdx, newIdx) => { if (oldIdx !== newIdx) orderIsPerfect = false; });
             const hasBugs = data.criticalBugs.length > 0 || data.trackpadBugs.length > 0 || data.maskingNotices.length > 0;
 
+            // 1. HERO BANNER
             if (!hasBugs && orderIsPerfect) {
-                resultsArea.innerHTML += `<div class="status-hero perfect">🎉 Awesome! Your keyboard layout logic is flawless.</div>`;
+                resultsArea.innerHTML += `<div class="status-hero perfect glass-panel stagger-1">🎉 Awesome! Your keyboard layout logic is flawless.</div>`;
             } else {
-                resultsArea.innerHTML += `<div class="status-hero needs-fix">⚠️ We found a few bugs! Just follow the Action Plan below to fix them.</div>`;
+                resultsArea.innerHTML += `<div class="status-hero needs-fix glass-panel stagger-1">⚠️ We found a few bugs! Just follow the Action Plan below to fix them.</div>`;
             }
 
+            // 2. THE ACTION PLAN
             if (!orderIsPerfect || data.trackpadBugs.length > 0) {
                 const targetListHtml = data.suggestedOrder.map((oldIdx, newIdx) => {
-                    const displayName = data.names[oldIdx] || "Unnamed Layer";
+                    const displayName = data.names[oldIdx] || "Unnamed";
                     if (oldIdx === 0) return `<li class="layer-item"><span class="num">${newIdx}</span> ${escapeHtml(displayName)} <span class="tag anchor">Base Layer</span></li>`;
-                    if (oldIdx === data.magicIndex) return `<li class="layer-item magic"><span class="num">${newIdx}</span> ${escapeHtml(displayName)} <span class="tag anchor" style="background:#c4b5fd; color:#4c1d95;">System Layer</span></li>`;
+                    if (oldIdx === data.magicIndex) return `<li class="layer-item magic"><span class="num">${newIdx}</span> ${escapeHtml(displayName)} <span class="tag anchor">System Layer</span></li>`;
                     let tag = oldIdx !== newIdx ? `<span class="tag moved">(Move from ${oldIdx})</span>` : '';
                     return `<li class="layer-item success"><span class="num">${newIdx}</span> ${escapeHtml(displayName)} ${tag}</li>`;
                 }).join('');
 
                 resultsArea.innerHTML += `
-                    <div class="action-plan">
-                        <h2>🛠️ Action Plan: Do this in MoErgo</h2>
+                    <div class="action-plan glass-panel stagger-2">
+                        <h2>🛠️ Action Plan</h2>
                         <div class="split-view">
                             <div>
                                 <ol>
@@ -453,24 +520,24 @@
                                 </ol>
                             </div>
                             <div>
-                                <h3 style="margin-top:0; font-size:1.1rem; color:#334155;">🎯 Target Order</h3>
+                                <h3 style="margin-top:0; font-size:1.1rem; color:#f8fafc; font-weight: 600;">🎯 Target Order</h3>
                                 <ul class="layer-list">${targetListHtml}</ul>
                             </div>
                         </div>
                     </div>`;
             }
 
+            // 3. THE 2.5D VISUALIZER & ACCORDIONS
             if (hasBugs || data.orphanedNotices.length > 0 || !orderIsPerfect) {
-                let detailsHtml = `<div style="margin-top: 1rem;">`;
+                let detailsHtml = `<div class="stagger-3">`;
                 
                 if (data.maskingNotices.length > 0) {
-                    
                     const hoverZGap = 55; 
-                    const physicalCardHeight = 120;
+                    const physicalCardHeight = 140;
                     const wrapperHeight = physicalCardHeight + (data.names.length * hoverZGap);
                     
                     let stackHtml = `
-                        <div class="viz-outer">
+                        <div class="glass-panel viz-outer">
                             <div class="stack-wrapper" style="height: ${wrapperHeight}px;" title="Hover to inspect layers">`;
                     
                     data.names.forEach((name, idx) => {
@@ -497,13 +564,13 @@
                     `;
 
                     detailsHtml += `
-                        <details class="card-warning" open>
+                        <details class="warning-theme glass-panel" open>
                             <summary>
                                 <div class="summary-title"><span>⚠️ Blocked Layers (Visualizer)</span> <span class="badge badge-warning">${data.maskingNotices.length}</span></div>
                                 <span class="chevron">▼</span>
                             </summary>
                             <div class="details-content">
-                                <p style="margin-bottom: 2rem;">ZMK layers act like stacked sheets of clear plastic. You have buttons on the <strong>Red Layers</strong> trying to open a layer beneath them. Because the red layer is physically higher in the stack, it stays on top and completely blocks your view! <em>(Hover over the stack below to expand it)</em></p>
+                                <p style="margin-bottom: 2.5rem;">ZMK layers act like stacked sheets of clear plastic. You have buttons on the <strong>Red Layers</strong> trying to open a layer beneath them. Because the red layer is physically higher in the stack, it stays on top and completely blocks your view! <em>(Hover over the stack below to expand it)</em></p>
                                 ${stackHtml}
                                 <ul class="issue-list" style="margin-top: 2rem;">${data.maskingNotices.map(i => `<li>${i}</li>`).join('')}</ul>
                             </div>
@@ -512,7 +579,7 @@
 
                 if (data.criticalBugs.length > 0) {
                     detailsHtml += `
-                        <details class="card-danger">
+                        <details class="danger-theme glass-panel">
                             <summary>
                                 <div class="summary-title"><span>🚨 Critical Logic Bugs</span> <span class="badge badge-danger">${data.criticalBugs.length}</span></div>
                                 <span class="chevron">▼</span>
@@ -525,7 +592,7 @@
                 }
                 if (data.trackpadBugs.length > 0) {
                     detailsHtml += `
-                        <details class="card-danger">
+                        <details class="danger-theme glass-panel">
                             <summary>
                                 <div class="summary-title"><span>🖱️ Trackpad Priority Errors</span> <span class="badge badge-danger">${data.trackpadBugs.length}</span></div>
                                 <span class="chevron">▼</span>
@@ -538,7 +605,7 @@
                 }
                 if (data.orphanedNotices.length > 0) {
                     detailsHtml += `
-                        <details class="card-info">
+                        <details class="glass-panel">
                             <summary>
                                 <div class="summary-title"><span>ℹ️ Unused Layers</span> <span class="badge badge-info">${data.orphanedNotices.length}</span></div>
                                 <span class="chevron">▼</span>
@@ -555,13 +622,13 @@
 
             // 4. BUDDY'S ZMK CRASH COURSE
             let cheatSheetHtml = `
-                <details class="card-purple" style="margin-top: 1rem;">
+                <details class="glass-panel stagger-4">
                     <summary>
                         <div class="summary-title"><span>🧠 Buddy's ZMK Cheat Sheet</span></div>
                         <span class="chevron">▼</span>
                     </summary>
-                    <div class="details-content" style="background: #fdf4ff;">
-                        <p style="color: #701a75; margin-bottom:1.5rem;">ZMK is powerful, but it has some quirks. Here are a few tips based on how you built your layout!</p>
+                    <div class="details-content">
+                        <p style="margin-bottom:2rem;">ZMK is powerful, but it has some quirks. Here are a few tips based on how you built your layout!</p>
                         <div class="split-view">
                             <div class="course-card">
                                 <h4>▽ Transparent vs. 🚫 None</h4>
@@ -588,7 +655,7 @@
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
 
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--primary)"; dropZone.style.background = "#e0f2fe"; });
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--primary)"; dropZone.style.background = "rgba(56, 189, 248, 0.05)"; });
         dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.style.borderColor = ""; dropZone.style.background = ""; });
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
